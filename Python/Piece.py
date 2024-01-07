@@ -5,6 +5,18 @@ PIECE_VALUES = {"pawn": 1, "knight": 3, "bishop": 3, "rook": 5, "queen": 9, "kin
 PIECE_MOVES = {"bishop": (7, 1, [1]), "rook": (7, 1, [0]), "queen": (7, 1, [0, 1]), "king": (1, 1, [0, 1]), "knight": (1, 2, [1, -1])}
 PROMOTABLES = ["knight", "bishop", "rook", "queen"]
 
+NOT_A_FILE = 0xfefefefefefefefe
+NOT_H_FILE = 0x7f7f7f7f7f7f7f7f
+
+def n_one(b): return b << 8
+def s_one(b): return b >> 8
+def e_one(b): return (b << 1) & NOT_A_FILE
+def ne_one(b): return (b << 9) & NOT_A_FILE
+def se_one(b): return (b >> 7) & NOT_A_FILE
+def w_one(b): return (b >> 1) & NOT_H_FILE
+def nw_one(b): return (b << 7) & NOT_H_FILE
+def sw_one(b): return (b >> 9) & NOT_H_FILE
+
 def display_notation(type, color):
     letter = "n" if type == "knight" else type[0] 
     return letter if color == "b" else chr(ord(letter)-32)
