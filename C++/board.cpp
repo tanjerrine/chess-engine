@@ -1,4 +1,6 @@
 #include "board.h"
+#include "utils.h"
+#include "move.h"
 #include <iostream>
 #include <sstream>
 #include <map>
@@ -8,10 +10,6 @@
 using std::string; using std::cout; using std::endl; using std::stringstream;
 using std::map; using std::vector; using std::pair;
 
-map<char, string> FEN_TO_PIECE = {{'p', "pawn"}, {'n', "knight"}, {'b', "bishop"}, {'r', "rook"}, {'q', "queen"}, {'k', "king"}};
-map<string, int> PIECE_TO_NUM = {{"pawn", 0}, {"knight", 1}, {"bishop", 2}, {"rook", 3}, {"queen", 4}, {"king", 5}};
-vector<char> NUM_TO_FEN = {'p', 'n', 'b', 'r', 'q', 'k'};
-
 Board::Board(std::string fen) {
     stringstream ss;
     ss << fen;
@@ -19,8 +17,8 @@ Board::Board(std::string fen) {
     ss >> board_str >> turn >> can_castle >> en_passant;
 
     for (int i = 0; i < 6; i++) {
-        w_pieces[i] = 0;
-        b_pieces[i] = 0;
+        w_piece_arr[i] = 0;
+        b_piece_arr[i] = 0;
     }
 
     U64 pos = (U64) 1 << 56;
@@ -29,29 +27,34 @@ Board::Board(std::string fen) {
             pos <<= (c - '0');
         }
         else if ('A' <= c && c <= 'Z') {
-            w_pieces[PIECE_TO_NUM[FEN_TO_PIECE[tolower(c)]]] |= pos;
+            w_piece_arr[PIECE_TO_NUM.at(FEN_TO_PIECE.at(tolower(c)))] |= pos;
             pos <<= 1;
         }
         else if ('a' <= c && c <= 'z') {
-            b_pieces[PIECE_TO_NUM[FEN_TO_PIECE[c]]] |= pos;
+            b_piece_arr[PIECE_TO_NUM.at(FEN_TO_PIECE.at(c))] |= pos;
             pos <<= 1;
         }
         else if (c == '/') {
             pos = (pos ? pos >> 16 : (U64) 1 << 48);
         }
     }
-    cout << board_str << turn << can_castle << en_passant << endl;
+    w_pieces = 0;
+    b_pieces = 0;
+    for (int i = 0; i < 6; i++) {
+        w_pieces |= w_piece_arr[i];
+        b_pieces |= b_piece_arr[i];
+    }
 }
 
 char Board::piece_at_square(U64 pos) {
-    for (int i = 0; i < sizeof(w_pieces) / sizeof(w_pieces[0]); i++) {
-        if (w_pieces[i] & pos) {
+    for (int i = 0; i < sizeof(w_piece_arr) / sizeof(w_piece_arr[0]); i++) {
+        if (w_piece_arr[i] & pos) {
             return toupper(NUM_TO_FEN[i]);
         }
     }
 
-    for (int i = 0; i < sizeof(b_pieces) / sizeof(b_pieces[0]); i++) {
-        if (b_pieces[i] & pos) {
+    for (int i = 0; i < sizeof(b_piece_arr) / sizeof(b_piece_arr[0]); i++) {
+        if (b_piece_arr[i] & pos) {
             return (NUM_TO_FEN[i]);
         }
     }
@@ -70,4 +73,25 @@ void Board::display() {
     }
     cout << "    " << "- - - - - - - - " << endl;
     cout << "    " << "a b c d e f g h" << endl;
+}
+
+void Board::get_legal_moves() {
+    vector<Move> legal_moves;
+    U64 (&p_arr)[6] = (turn == 'w' ? w_piece_arr : b_piece_arr);
+    for (int i = 0; i < 6; i++) {
+        if (i == 0) {
+            U64 piece_bb = p_arr[i];
+            vector<Move> p_moves = pawns_legal_moves(piece_bb, this);
+            legal_moves = p_moves;
+        }
+        else {
+            break;
+        }
+    }
+    cout << legal_moves.size() << endl;
+    cout << "All legal moves: ";
+    for (auto m : legal_moves) {
+        cout << m.get_notation() << ", ";
+    }
+    cout << endl;
 }
