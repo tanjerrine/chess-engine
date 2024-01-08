@@ -25,14 +25,14 @@ const int index64[64] = {
     44, 24, 15, 8,  23, 7,  6, 5
 };
 
-#define n_one(b) (b << 8)
-#define s_one(b) (b >> 8)
-#define e_one(b) ((b << 1) & NOT_A_FILE)
-#define ne_one(b) ((b << 9) & NOT_A_FILE)
-#define se_one(b) ((b >> 7) & NOT_A_FILE)
-#define w_one(b) ((b >> 1) & NOT_H_FILE)
-#define nw_one(b) ((b << 7) & NOT_H_FILE)
-#define sw_one(b) ((b >> 9) & NOT_H_FILE)
+#define n_one(b) ((b) << 8)
+#define s_one(b) ((b) >> 8)
+#define e_one(b) (((b) << 1) & NOT_A_FILE)
+#define ne_one(b) (((b) << 9) & NOT_A_FILE)
+#define se_one(b) (((b) >> 7) & NOT_A_FILE)
+#define w_one(b) (((b) >> 1) & NOT_H_FILE)
+#define nw_one(b) (((b) << 7) & NOT_H_FILE)
+#define sw_one(b) (((b) >> 9) & NOT_H_FILE)
 #define rank_mask(rank) ((U64) 255 << (8 * (rank - 1)))
 
 char int_to_alg_not(int piece);
@@ -42,5 +42,11 @@ int bit_scan(U64 bb);
 std::string pos_to_sq(U64 pos);
 
 U64 sq_to_pos(std::string sq);
+
+template<class T>
+inline void vector_extend(T &old, T &append) {
+    old.reserve(old.size() + distance(append.begin(), append.end()));
+    old.insert(old.end(), append.begin(), append.end());
+}
 
 #endif

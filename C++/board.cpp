@@ -79,13 +79,21 @@ void Board::get_legal_moves() {
     vector<Move> legal_moves;
     U64 (&p_arr)[6] = (turn == 'w' ? w_piece_arr : b_piece_arr);
     for (int i = 0; i < 6; i++) {
+        U64 piece_bb = p_arr[i];
         if (i == 0) {
-            U64 piece_bb = p_arr[i];
             vector<Move> p_moves = pawns_legal_moves(piece_bb, this);
-            legal_moves = p_moves;
+            vector_extend(legal_moves, p_moves);
+        }
+        else if (i == 1) {
+            vector<Move> n_moves = king_knights_legal_moves(piece_bb, this, i);
+            vector_extend(legal_moves, n_moves);
+        }
+        else if (i == 5) {
+            vector<Move> k_moves = king_knights_legal_moves(piece_bb, this, i);
+            vector_extend(legal_moves, k_moves);
         }
         else {
-            break;
+            ;
         }
     }
     cout << legal_moves.size() << endl;
