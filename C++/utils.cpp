@@ -35,3 +35,23 @@ U64 sq_to_pos(std::string sq) {
     int rank = sq[1] - '1';
     return (U64) 1 << (8 * rank + file);
 }
+
+void print_bb(U64 bb) {
+    for (int r = 7; r >= 0; r--) {
+        cout << r+1 << " | ";
+        for (int c = 0; c < 8; c++) {
+            char p = ((bb & ((U64) 1 << (8 * r + c))) ? '1' : '.');
+            cout << p << " ";
+        }
+        cout << endl;
+    }
+    cout << "    " << "- - - - - - - - " << endl;
+    cout << "    " << "a b c d e f g h" << endl;
+}
+
+U8 reverse_bits(U8 b) {
+    b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;
+    b = (b & 0xCC) >> 2 | (b & 0x33) << 2;
+    b = (b & 0xAA) >> 1 | (b & 0x55) << 1;
+    return b;
+}

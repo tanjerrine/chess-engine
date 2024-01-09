@@ -88,6 +88,10 @@ void Board::get_legal_moves() {
             vector<Move> n_moves = king_knights_legal_moves(piece_bb, this, i);
             vector_extend(legal_moves, n_moves);
         }
+        else if (i == 3) {
+            vector<Move> r_moves = rooks_legal_moves(piece_bb, this);
+            vector_extend(legal_moves, r_moves);
+        }
         else if (i == 5) {
             vector<Move> k_moves = king_knights_legal_moves(piece_bb, this, i);
             vector_extend(legal_moves, k_moves);
