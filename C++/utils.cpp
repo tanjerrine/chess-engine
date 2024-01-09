@@ -55,3 +55,15 @@ U8 reverse_bits(U8 b) {
     b = (b & 0xAA) >> 1 | (b & 0x55) << 1;
     return b;
 }
+
+U64 diagonal_mask(int sq) {
+    int rem = sq % 9; 
+    if (sq / 8 != sq / 9) {
+        int shift = 9 - rem;
+        return (main_diagonal >> shift) & ~first_n_ranks_mask(shift); 
+    }
+    else {
+        if (rem == 0) return main_diagonal;
+        return (main_diagonal << rem) & first_n_ranks_mask(8 - rem);
+    }
+}

@@ -148,7 +148,10 @@ U64 get_rook_atks(U64 occ, U64 slider) {
     return get_rook_hor_atks(occ, slider) | get_rook_vert_atks(occ, slider);
 }
 
-vector<Move> rooks_legal_moves(U64 piece_bb, Board* board) {
+vector<Move> sliders_legal_moves(U64 piece_bb, Board* board, int piece) {
+    U64 (*atk_fun)(U64, U64);
+    if (piece == 3) atk_fun = get_rook_atks;
+    else if (piece == 2) atk_fun = get_bishop_atks;
     vector<Move> moves;
     char color = board->get_turn();
     U64 opp_pieces = (color == 'w' ? board->get_b_pieces() : board->get_w_pieces());
@@ -157,16 +160,45 @@ vector<Move> rooks_legal_moves(U64 piece_bb, Board* board) {
     while (piece_bb) {
         U64 start_pos = piece_bb & -piece_bb;
         // cout << "rook at: " << endl; print_bb(start_pos);
-        U64 atks = get_rook_atks(occ, start_pos);
+        U64 atks = atk_fun(occ, start_pos);
         // cout << "atks: " << endl; print_bb(atks);
         atks &= ~same_pieces;
         while (atks) {
             U64 curr = atks & -atks;
-            Move m(3, start_pos, curr, curr & opp_pieces);
+            Move m(piece, start_pos, curr, curr & opp_pieces);
             moves.push_back(m);
             atks &= atks - 1;
         }
         piece_bb &= piece_bb - 1;
     }
     return moves;
+}
+
+U64 diag_atks(U64 occ, U64 slider, bool anti) {
+    int sq = bit_scan(slider);
+    // int rank_adj = (bit_scan(slider) / 8) * 8;
+    // occ >>= rank_adj; slider >>= rank_adj;
+
+    U64 mask = (anti ? anti_diagonal_mask(sq) : diagonal_mask(sq));
+    // cout << "diag mask: " << endl; print_bb(mask);
+    U64 forward = occ & mask;
+    // cout << "o: " << endl; print_bb(forward);
+    forward -= slider;
+    // cout << "o-s: " << endl; print_bb(forward);
+    U64 reverse = __builtin_bswap64(forward);
+    // cout << "reverse: " << endl; print_bb(reverse);
+    forward -= slider;
+    // cout << "o-2s: " << endl; print_bb(forward);
+    // cout << "reverse(slider): " << endl; print_bb(reverse_bits(slider));
+    reverse -= __builtin_bswap64(slider);
+    // cout << "o'-2s': " << endl; print_bb(reverse);
+
+    forward ^= (__builtin_bswap64(reverse));
+    // cout << "final: " << endl; print_bb(forward);
+    // cout << "mask: " << endl; print_bb(mask);
+    return (forward & mask);
+}
+
+U64 get_bishop_atks(U64 occ, U64 slider) {
+    return diag_atks(occ, slider, false) | diag_atks(occ, slider, true);
 }

@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
     // knight and pawn captures
     // Board b("1nbqkb1r/rppp1ppp/p4n1B/3Bp3/3PP2P/5N2/PPP2PP1/RN1QK2R b KQk - 6 7");
     // rook moves
-    Board b("1r4k1/5p1p/4rn2/1p6/2n5/B1N1R3/5PP1/1R3K2 b - - 0 1");
+    Board b("1r4k1/5p1p/4rn2/1p6/2n5/B1N1R3/5PP1/1R3K2 w - - 0 1");
     b.display();
     // Move m(1, (U64) 2, (U64) 1 << 18, 0);
     // cout << m.get_notation() << endl;
@@ -73,6 +73,13 @@ int main(int argc, char* argv[]) {
     // cout << "rook attacks precomputed: " << endl; print_bb(rook_atks_pre);
     // U64 rook_atks_line = line_atks(occ, rook);
     // cout << "rook attacks line: " << endl; print_bb(rook_atks_line);
+
+    // U64 bishop = (U64) 1 << 50;
+    // U64 occ = bishop | (bishop >> 14);
+    // cout << "Bishop: " << endl; print_bb(bishop);
+    // cout << "Occ: " << endl; print_bb(occ);
+    // U64 atks = diag_atks(occ, bishop, true);
+    // cout << "Diagonal atks: " << endl; print_bb(atks);
 
     // generate knight attacks
     // cout << "Generating knight attacks: " << endl;

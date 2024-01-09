@@ -11,6 +11,7 @@ typedef unsigned char U8;
 const U64 NOT_A_FILE = 0xfefefefefefefefe;
 const U64 NOT_H_FILE = 0x7f7f7f7f7f7f7f7f;
 const U64 main_diagonal = 0x8040201008040201;
+const U64 anti_diagonal = 0x102040810204080;
 
 const std::map<char, std::string> FEN_TO_PIECE = {{'p', "pawn"}, {'n', "knight"}, {'b', "bishop"}, {'r', "rook"}, {'q', "queen"}, {'k', "king"}};
 const std::map<std::string, int> PIECE_TO_NUM = {{"pawn", 0}, {"knight", 1}, {"bishop", 2}, {"rook", 3}, {"queen", 4}, {"king", 5}};
@@ -38,6 +39,7 @@ const int index64[64] = {
 #define rank_mask(rank) ((U64) 255 << (8 * ((rank) - 1)))
 #define rank_of_sq(sq) ((sq) / 8 + 1)
 #define column_mask(col) (~NOT_A_FILE << (col))
+#define first_n_ranks_mask(n) (((U64) 1 << (8 * (n))) - 1)
 
 char int_to_alg_not(int piece);
 
@@ -58,5 +60,8 @@ void print_bb(U64 bb);
 U8 reverse_bits(U8 b);
 
 inline int scalar_90_ccw_rotate(int sq) {return (((sq >> 3) | (sq << 3)) & 63) ^ 7;}
+
+U64 diagonal_mask(int sq);
+inline U64 anti_diagonal_mask(int sq) {return __builtin_bswap64(diagonal_mask(sq ^ 56));}
 
 #endif

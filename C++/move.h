@@ -74,6 +74,8 @@ U64 line_atks(U64 occ, U64 slider);
 U64 get_rook_hor_atks(U64 occ, U64 slider);
 U64 get_rook_vert_atks(U64 occ, U64 slider);
 U64 get_rook_atks(U64 occ, U64 slider);
-std::vector<Move> rooks_legal_moves(U64 piece_bb, Board* board);
+std::vector<Move> sliders_legal_moves(U64 piece_bb, Board* board, int piece);
+U64 diag_atks(U64 occ, U64 slider, bool anti);
+U64 get_bishop_atks(U64 occ, U64 slider);
 
 #endif
