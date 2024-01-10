@@ -1,6 +1,6 @@
+#include "move.h"
 #include "board.h"
 #include "utils.h"
-#include "move.h"
 #include <iostream>
 #include <sstream>
 #include <map>
@@ -14,7 +14,13 @@ Board::Board(std::string fen) {
     stringstream ss;
     ss << fen;
     string board_str;
-    ss >> board_str >> turn >> can_castle >> en_passant;
+    char turn_char;
+    string en_passant_str;
+    ss >> board_str >> turn_char >> can_castle >> en_passant_str >> half_move_clock >> move_number;
+    if (turn_char == 'w') turn = white;
+    else if (turn_char == 'b') turn = black;
+    else {cout << "Invalid turn character from fen!" << endl; exit(EXIT_FAILURE);}
+    en_passant = sq_to_pos(en_passant_str);
 
     for (int i = 0; i < 6; i++) {
         w_piece_arr[i] = 0;
@@ -75,35 +81,79 @@ void Board::display() {
     cout << "    " << "a b c d e f g h" << endl;
 }
 
-void Board::get_legal_moves() {
+vector<Move> Board::get_legal_moves() {
     vector<Move> legal_moves;
-    U64 (&p_arr)[6] = (turn == 'w' ? w_piece_arr : b_piece_arr);
+    U64 (&p_arr)[6] = (turn == white ? w_piece_arr : b_piece_arr);
     for (int i = 0; i < 6; i++) {
         U64 piece_bb = p_arr[i];
         if (i == 0) {
             vector<Move> p_moves = pawns_legal_moves(piece_bb, this);
             vector_extend(legal_moves, p_moves);
         }
-        else if (i == 1) {
+        else if (i == 1 || i == 5) {
             vector<Move> n_moves = king_knights_legal_moves(piece_bb, this, i);
             vector_extend(legal_moves, n_moves);
         }
-        else if (i == 2 || i == 3) {
+        else {
             vector<Move> s_moves = sliders_legal_moves(piece_bb, this, i);
             vector_extend(legal_moves, s_moves);
         }
-        else if (i == 5) {
-            vector<Move> k_moves = king_knights_legal_moves(piece_bb, this, i);
-            vector_extend(legal_moves, k_moves);
-        }
-        else {
-            ;
-        }
     }
-    cout << legal_moves.size() << endl;
-    cout << "All legal moves: ";
-    for (auto m : legal_moves) {
-        cout << m.get_notation() << ", ";
+
+    return legal_moves;
+}
+
+void Board::make_move(const Move &move) {
+    U64 start = move.get_start();
+    U64 finish = move.get_finish();
+    U64 moved_piece = move.get_piece();
+    // update piece_bb
+    U64 (&pieces_arr)[6] = (turn == white ? w_piece_arr : b_piece_arr);
+    U64 &piece_bb = pieces_arr[moved_piece];
+    piece_bb &= ~start;
+    piece_bb |= finish;
+    // update bb for this color
+    U64 &my_color_bb = (turn == white ? w_pieces : b_pieces);
+    my_color_bb &= ~start;
+    my_color_bb |= finish;
+    // delete piece for capture, reset 50 move rule
+    if (move.get_capture()) {
+        U64 erase = finish;
+        if (move.get_en_passant()) {erase = (turn == white ? finish >> 8 : finish << 8);}
+        U64 (&opp_pieces_arr)[6] = (turn == black ? w_piece_arr : b_piece_arr);
+        U64 &opp_color_bb = (turn == black ? w_pieces : b_pieces);
+        for (int i = 0; i < 6; i++) {
+            opp_pieces_arr[i] &= ~erase;
+        }
+        opp_color_bb &= ~erase;
+        half_move_clock = 0;
     }
-    cout << endl;
+    else if (moved_piece == 0) {
+        half_move_clock = 0;
+    }
+    else half_move_clock++;
+    // update en_passant
+    if (moved_piece == 0 && (((start >> 16) & finish) | ((start << 16) & finish))) {
+        en_passant = (turn == white ? start << 8 : start >> 8);
+    }
+    else {
+        en_passant = 0;
+    }
+    // update turn, move clocks
+    if (turn == black) {
+        turn = white;
+        move_number++;
+    }
+    else {
+        turn = black;
+    }
+}
+
+bool Board::in_check(enum_color color) {
+    U64 (&opp_bb_arr)[6] = (color == white ? b_piece_arr : w_piece_arr);
+    U64 sq = (color == white ? w_piece_arr[5] : b_piece_arr[5]);
+    U64 atks = attacks_to_sq(opp_bb_arr, w_pieces | b_pieces, sq, color);
+    // cout << "atks bb: " << endl;
+    // print_bb(atks);
+    return atks;
 }

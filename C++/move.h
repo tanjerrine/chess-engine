@@ -1,9 +1,9 @@
 #ifndef MOVE_H
 #define MOVE_H
 #include "utils.h"
-#include "board.h"
 #include <string>
 #include <vector>
+#include <iostream>
 
 typedef unsigned long long U64;
 
@@ -51,7 +51,13 @@ const U8 rook_first_rank_attacks[64][8] = {
 class Move {
     public:
         Move(int piece, U64 start, U64 finish, bool capture = false, bool en_passant = false, int promote = -1);
-        std::string get_notation();
+        std::string get_notation() const;
+        inline int get_piece() const {return piece;}
+        inline U64 get_start() const {return start;}
+        inline U64 get_finish() const {return finish;}
+        inline bool get_capture() const {return capture;}
+        inline bool get_en_passant() const {return en_passant;}
+        inline int get_promote() const {return promote;}
 
     private:
         int piece;
@@ -66,6 +72,11 @@ inline U64 w_pawn_east_atks(U64 w_pawns) {return ne_one(w_pawns);}
 inline U64 w_pawn_west_atks(U64 w_pawns) {return nw_one(w_pawns);}
 inline U64 b_pawn_east_atks(U64 b_pawns) {return se_one(b_pawns);}
 inline U64 b_pawn_west_atks(U64 b_pawns) {return sw_one(b_pawns);}
+inline U64 w_pawn_atks(U64 w_pawns) {return w_pawn_east_atks(w_pawns) | w_pawn_west_atks(w_pawns);}
+inline U64 b_pawn_atks(U64 b_pawns) {return b_pawn_east_atks(b_pawns) | b_pawn_west_atks(b_pawns);}
+
+class Board;
+#include "board.h"
 
 std::vector<Move> pawns_legal_moves(U64 pawn_poss, Board* board);
 std::vector<Move> king_knights_legal_moves(U64 pawn_poss, Board* board, int piece);
@@ -77,5 +88,17 @@ U64 get_rook_atks(U64 occ, U64 slider);
 std::vector<Move> sliders_legal_moves(U64 piece_bb, Board* board, int piece);
 U64 diag_atks(U64 occ, U64 slider, bool anti);
 U64 get_bishop_atks(U64 occ, U64 slider);
+inline U64 get_queen_atks(U64 occ, U64 slider) {return get_rook_atks(occ, slider) | get_bishop_atks(occ, slider);}
+U64 attacks_to_sq(U64 (&piece_bb)[6], U64 occ_bb, U64 sq, enum_color king_color);
+
+inline void print_moves(std::vector<Move> moves) {
+    int num = moves.size();
+    std::cout << "Printing all " << num << " moves: ";
+    for (int i = 0; i < num; i++) {
+        std::cout << moves[i].get_notation();
+        if (i != num - 1) std::cout << ", ";
+    }
+    std::cout << std::endl;
+}
 
 #endif

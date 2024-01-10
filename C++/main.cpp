@@ -1,8 +1,8 @@
-#include "board.h"
 #include "move.h"
+#include "board.h"
 #include <iostream>
 
-using std::cout; using std::endl;
+using std::cout; using std::endl; using std::vector;
 
 void init_first_rank_atks() {
     for (U64 occ = 0; occ < 128; occ+=2) {
@@ -36,6 +36,22 @@ void verify_rook_atks() {
     cout << "SUCCESS! ROOK MOVES MATCH LINE_ATKS FUNCTION" << endl;
 }
 
+void test_illegal_moves() {
+    Board b("5rk1/6p1/1b4q1/8/8/4B3/6N1/4R1K1 w - - 0 1");
+    b.display();
+    vector<Move> legal_moves = b.get_legal_moves();
+    print_moves(legal_moves);
+
+    enum_color turn = b.get_turn();
+    for (Move m : legal_moves) {
+        Board board_copy(b);
+        board_copy.make_move(m); 
+        if (board_copy.in_check(turn)) {
+            cout << "Illegal move: " << m.get_notation() << endl;
+        }
+    }
+}
+
 int main(int argc, char* argv[]) {
     // pawn captures
     // Board b("rn1qkbnr/pp2pppp/8/2pp1b2/3PP3/5N2/PPP2PPP/RNBQKB1R b KQkq - 2 4");
@@ -44,7 +60,15 @@ int main(int argc, char* argv[]) {
     // knight and pawn captures
     // Board b("1nbqkb1r/rppp1ppp/p4n1B/3Bp3/3PP2P/5N2/PPP2PP1/RN1QK2R b KQk - 6 7");
     // rook moves
-    Board b("1r4k1/5p1p/4rn2/1p6/2n5/B1N1R3/5PP1/1R3K2 w - - 0 1");
+    // Board b("1r4k1/5p1p/4rn2/1p6/2n5/B1N1R3/5PP1/1R3K2 w - - 0 1");
+    // all psuedo moves
+    // Board b("1rq3k1/4bp1p/4rn2/1p6/2n2Q2/B1N1RB2/5PP1/1R3K2 b - - 0 1");
+    // test en_passant
+    // Board b("1rq3k1/4bp1p/4rn2/1pP5/2n2Q2/B1N1RB2/5PP1/1R3K2 w - b6 0 1");
+    // test legal moves
+    Board b("5rk1/6p1/1b4q1/8/8/4B3/6N1/4R1K1 w - - 0 1");
+    // test atks_sq
+    // Board b("5rk1/6p1/1b4q1/8/8/7n/8/r3R1K1 w - - 0 1");
     b.display();
     // Move m(1, (U64) 2, (U64) 1 << 18, 0);
     // cout << m.get_notation() << endl;
@@ -52,7 +76,14 @@ int main(int argc, char* argv[]) {
     // cout << m2.get_notation() << endl;
     // Move m3(2, (U64) 1 << 27, (U64) 1 << 36);
     // cout << m3.get_notation() << endl;
-    b.get_legal_moves();
+    vector<Move> legal_moves = b.get_legal_moves();
+    print_moves(legal_moves);
+    
+    // test_illegal_moves();
+    // Move test_move = Move(0, (U64) 1 << 34, (U64) 1 << 41, true, true);
+    // cout << "After move " << test_move.get_notation() << ", board looks like this:" << endl;
+    // b.make_move(test_move);
+    // b.display();
 
     // U64 rook = (U64) 1 << 28;
     // U64 occ = (0x03UL << 24) | rook;
