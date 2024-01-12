@@ -1,5 +1,6 @@
 #include "move.h"
 #include "board.h"
+#include "strategy.h"
 #include <iostream>
 
 using std::cout; using std::endl; using std::vector;
@@ -37,9 +38,10 @@ void verify_rook_atks() {
 }
 
 void test_illegal_moves() {
-    Board b("5rk1/6p1/1b4q1/8/8/4B3/6N1/4R1K1 w - - 0 1");
+    // Board b("5rk1/6p1/1b4q1/8/8/4B3/6N1/4R1K1 w - - 0 1");
+    Board b("7k/1q4pp/8/8/8/8/6QP/5r1K w - - 0 1");
     b.display();
-    vector<Move> legal_moves = b.get_legal_moves();
+    vector<Move> legal_moves = b.get_pseudo_legal_moves();
     print_moves(legal_moves);
 
     enum_color turn = b.get_turn();
@@ -50,6 +52,19 @@ void test_illegal_moves() {
             cout << "Illegal move: " << m.get_notation() << endl;
         }
     }
+}
+
+void test_eval_function() {
+    Board b("6qk/bb4pp/7q/8/8/7r/6NP/7K b - - 0 1");
+    b.display();
+    cout << "Evaluation: " << b.get_eval() << endl;
+}
+
+void print_best_move() {
+    Board b("4b2R/6k1/8/5n2/2K5/8/7P/8 w - - 0 1");
+    b.display();
+    Move best = best_move(b);
+    cout << "Best move: " << best.get_notation() << endl; 
 }
 
 int main(int argc, char* argv[]) {
@@ -66,18 +81,14 @@ int main(int argc, char* argv[]) {
     // test en_passant
     // Board b("1rq3k1/4bp1p/4rn2/1pP5/2n2Q2/B1N1RB2/5PP1/1R3K2 w - b6 0 1");
     // test legal moves
-    Board b("5rk1/6p1/1b4q1/8/8/4B3/6N1/4R1K1 w - - 0 1");
+    // Board b("5rk1/6p1/1b4q1/8/8/4B3/6N1/4R1K1 w - - 0 1");
     // test atks_sq
     // Board b("5rk1/6p1/1b4q1/8/8/7n/8/r3R1K1 w - - 0 1");
-    b.display();
-    // Move m(1, (U64) 2, (U64) 1 << 18, 0);
-    // cout << m.get_notation() << endl;
-    // Move m2(0, (U64) 1 << 27, (U64) 1 << 36, 0);
-    // cout << m2.get_notation() << endl;
-    // Move m3(2, (U64) 1 << 27, (U64) 1 << 36);
-    // cout << m3.get_notation() << endl;
-    vector<Move> legal_moves = b.get_legal_moves();
-    print_moves(legal_moves);
+
+    // b.display();
+    // vector<Move> legal_moves = b.get_pseudo_legal_moves();
+    // print_moves(legal_moves);
+    print_best_move();
     
     // test_illegal_moves();
     // Move test_move = Move(0, (U64) 1 << 34, (U64) 1 << 41, true, true);

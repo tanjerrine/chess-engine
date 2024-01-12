@@ -81,7 +81,7 @@ void Board::display() {
     cout << "    " << "a b c d e f g h" << endl;
 }
 
-vector<Move> Board::get_legal_moves() {
+vector<Move> Board::get_pseudo_legal_moves() {
     vector<Move> legal_moves;
     U64 (&p_arr)[6] = (turn == white ? w_piece_arr : b_piece_arr);
     for (int i = 0; i < 6; i++) {
@@ -100,6 +100,19 @@ vector<Move> Board::get_legal_moves() {
         }
     }
 
+    return legal_moves;
+}
+
+vector<Move> Board::get_legal_moves() {
+    vector<Move> psuedo_legal = get_pseudo_legal_moves();
+    vector<Move> legal_moves;
+    for (Move m : psuedo_legal) {
+        Board board_copy(*this);
+        board_copy.make_move(m); 
+        if (!board_copy.in_check(turn)) {
+            legal_moves.push_back(m);
+        }
+    }
     return legal_moves;
 }
 
@@ -156,4 +169,46 @@ bool Board::in_check(enum_color color) {
     // cout << "atks bb: " << endl;
     // print_bb(atks);
     return atks;
+}
+
+// TODO: potential optimization only count legal moves
+bool Board::is_checkmated() {
+    if (in_check(turn)) {
+        vector<Move> moves = get_legal_moves();
+        return (moves.size() == 0);
+    }
+    return false;
+}
+
+bool Board::is_stalemated() {
+    if (!in_check(turn)) {
+        vector<Move> moves = get_legal_moves();
+        return (moves.size() == 0);
+    }
+    return false;
+}
+
+bool Board::game_over() {
+    return is_checkmated() || is_stalemated();
+}
+
+int Board::count_pieces(int piece, enum_color color) {
+    U64 (&piece_bb_arr)[6] = (color == white ? w_piece_arr : b_piece_arr);
+    U64 piece_bb = piece_bb_arr[piece];
+    int count = 0;
+    while (piece_bb) {
+        piece_bb &= piece_bb - 1;
+        count++;
+    }
+    return count;
+}
+
+float Board::get_eval() {
+    if (is_checkmated()) return (turn == white ? B_CHECKMATE_SCORE : W_CHECKMATE_SCORE);
+    if (is_stalemated()) return 0;
+    float eval = 0;
+    for (int i = 0; i < 6; i++) {
+        eval += (count_pieces(i, white) - count_pieces(i, black)) * PIECE_VALUES[i];
+    }
+    return eval;
 }

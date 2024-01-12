@@ -16,6 +16,7 @@ const U64 anti_diagonal = 0x102040810204080;
 const std::map<char, std::string> FEN_TO_PIECE = {{'p', "pawn"}, {'n', "knight"}, {'b', "bishop"}, {'r', "rook"}, {'q', "queen"}, {'k', "king"}};
 const std::map<std::string, int> PIECE_TO_NUM = {{"pawn", 0}, {"knight", 1}, {"bishop", 2}, {"rook", 3}, {"queen", 4}, {"king", 5}};
 const std::vector<char> NUM_TO_FEN = {'p', 'n', 'b', 'r', 'q', 'k'};
+const int PIECE_VALUES[6] = {1, 3, 3, 5, 9, 150};
 
 const int index64[64] = {
     63, 0,  58, 1,  59, 47, 53, 2, 
