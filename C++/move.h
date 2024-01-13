@@ -58,6 +58,7 @@ class Move {
         inline bool get_capture() const {return capture;}
         inline bool get_en_passant() const {return en_passant;}
         inline int get_promote() const {return promote;}
+        bool operator > (const Move &move) const;
 
     private:
         int piece;
@@ -66,6 +67,20 @@ class Move {
         bool capture;
         bool en_passant;
         int promote;
+};
+
+class Unmove {
+    public:
+        inline Unmove(int captured, U64 en_passant, U8 can_castle, int half_move_clock) : captured(captured), en_passant(en_passant), can_castle(can_castle), half_move_clock(half_move_clock) {}
+        inline int get_captured() {return captured;}
+        inline U64 get_en_passant() {return en_passant;}
+        inline U8 get_can_castle() {return can_castle;}
+        inline int get_hmc() {return half_move_clock;}
+    private:
+        int captured;
+        U64 en_passant;
+        U8 can_castle;
+        int half_move_clock;
 };
 
 inline U64 w_pawn_east_atks(U64 w_pawns) {return ne_one(w_pawns);}
@@ -78,14 +93,14 @@ inline U64 b_pawn_atks(U64 b_pawns) {return b_pawn_east_atks(b_pawns) | b_pawn_w
 class Board;
 #include "board.h"
 
-std::vector<Move> pawns_legal_moves(U64 pawn_poss, Board* board);
-std::vector<Move> king_knights_legal_moves(U64 pawn_poss, Board* board, int piece);
+void pawns_legal_moves(std::vector<Move> &legal_moves, U64 pawn_poss, Board* board);
+void king_knights_legal_moves(std::vector<Move> &legal_moves, U64 pawn_poss, Board* board, int piece);
+void sliders_legal_moves(std::vector<Move> &legal_moves, U64 piece_bb, Board* board, int piece);
 
 U64 line_atks(U64 occ, U64 slider);
 U64 get_rook_hor_atks(U64 occ, U64 slider);
 U64 get_rook_vert_atks(U64 occ, U64 slider);
 U64 get_rook_atks(U64 occ, U64 slider);
-std::vector<Move> sliders_legal_moves(U64 piece_bb, Board* board, int piece);
 U64 diag_atks(U64 occ, U64 slider, bool anti);
 U64 get_bishop_atks(U64 occ, U64 slider);
 inline U64 get_queen_atks(U64 occ, U64 slider) {return get_rook_atks(occ, slider) | get_bishop_atks(occ, slider);}

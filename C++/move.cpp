@@ -19,15 +19,32 @@ string Move::get_notation() const {
     else {
         notation = (piece ? int_to_alg_not(piece) : pos_to_sq(start)[0]) + ('x' + f_pos);
     }
-    // if (en_passant) notation += 'e';
+    if (promote > -1) {notation += string(1,'=') + int_to_alg_not(promote);}
     return notation;
+}
+
+bool Move::operator > (const Move &move) const {
+    return (capture && !move.get_capture());
+}
+
+void add_pawn_move_promotions(vector<Move> &moves, U64 curr, U64 last_rank, U64 s, bool cap, bool en_p) {
+    if (!(curr & last_rank)) {
+            Move m(0, s, curr, cap, en_p);
+            moves.push_back(m);
+        }
+        else {
+            for (int i = 4; i > 0; i--) {
+                Move m(0, s, curr, cap, en_p, i);
+                moves.push_back(m);
+            }
+        }
 }
 
 // TODO: make const ref to board?
 // TODO: promotion
-vector<Move> pawns_legal_moves(U64 pawn_poss, Board* board) {
-    vector<Move> moves;
+void pawns_legal_moves(std::vector<Move> &moves, U64 pawn_poss, Board* board) {
     enum_color color = board->get_turn();
+    U64 last_rank = (color == white ? rank_mask(8) : rank_mask(1));
     // Captures
     U64 opp_pieces = (color == white ? board->get_b_pieces() : board->get_w_pieces());
     U64 en_passant = board->get_en_passant();
@@ -36,15 +53,13 @@ vector<Move> pawns_legal_moves(U64 pawn_poss, Board* board) {
     while (east_caps) {
         U64 curr = east_caps & -east_caps;
         U64 start_pos = (color == white ? sw_one(curr) : nw_one(curr));
-        Move m(0, start_pos, curr, true, curr & en_passant);
-        moves.push_back(m);
+        add_pawn_move_promotions(moves, curr, last_rank, start_pos, true, curr & en_passant);
         east_caps &= east_caps - 1;
     }
     while (west_caps) {
         U64 curr = west_caps & -west_caps;
         U64 start_pos = (color == white ? se_one(curr) : ne_one(curr));
-        Move m(0, start_pos, curr, true, curr & en_passant);
-        moves.push_back(m);
+        add_pawn_move_promotions(moves, curr, last_rank, start_pos, true, curr & en_passant);
         west_caps &= west_caps - 1;
     }
 
@@ -58,8 +73,7 @@ vector<Move> pawns_legal_moves(U64 pawn_poss, Board* board) {
     while (one_moves) {
         U64 curr = one_moves & -one_moves;
         U64 start_pos = (color == white ? s_one(curr) : n_one(curr));
-        Move m(0, start_pos, curr);
-        moves.push_back(m);
+        add_pawn_move_promotions(moves, curr, last_rank, start_pos, false, false);
         one_moves &= one_moves - 1;
     }
     while (two_moves) {
@@ -70,15 +84,14 @@ vector<Move> pawns_legal_moves(U64 pawn_poss, Board* board) {
         two_moves &= two_moves - 1;
     }
 
-    return moves;
+    return;
 }
 
-vector<Move> king_knights_legal_moves(U64 piece_bb, Board* board, int piece) {
+void king_knights_legal_moves(std::vector<Move> &moves, U64 piece_bb, Board* board, int piece) {
     if (piece != 1 && piece != 5) {
         cout << "Incorrect usage of king_knights_legal_moves, piece must be knight or king" << endl;
         exit(EXIT_FAILURE);
     }
-    vector<Move> moves;
     enum_color color = board->get_turn();
     U64 opp_pieces = (color == white ? board->get_b_pieces() : board->get_w_pieces());
     U64 same_pieces = (color == black ? board->get_b_pieces() : board->get_w_pieces());
@@ -95,7 +108,7 @@ vector<Move> king_knights_legal_moves(U64 piece_bb, Board* board, int piece) {
         }
         piece_bb &= piece_bb - 1;
     }
-    return moves;
+    return;
 }
 
 U64 line_atks(U64 occ, U64 slider) {
@@ -148,13 +161,12 @@ U64 get_rook_atks(U64 occ, U64 slider) {
     return get_rook_hor_atks(occ, slider) | get_rook_vert_atks(occ, slider);
 }
 
-vector<Move> sliders_legal_moves(U64 piece_bb, Board* board, int piece) {
+void sliders_legal_moves(std::vector<Move> &moves, U64 piece_bb, Board* board, int piece) {
     U64 (*atk_fun)(U64, U64);
     if (piece == 3) atk_fun = get_rook_atks;
     else if (piece == 2) atk_fun = get_bishop_atks;
     else if (piece == 4) atk_fun = get_queen_atks;
     else {cout << "Incorrect usage of sliders_legal_moves, piece must be bishop, rook, or queen" << endl; exit(EXIT_FAILURE);}
-    vector<Move> moves;
     enum_color color = board->get_turn();
     U64 opp_pieces = (color == white ? board->get_b_pieces() : board->get_w_pieces());
     U64 same_pieces = (color == black ? board->get_b_pieces() : board->get_w_pieces());
@@ -173,7 +185,7 @@ vector<Move> sliders_legal_moves(U64 piece_bb, Board* board, int piece) {
         }
         piece_bb &= piece_bb - 1;
     }
-    return moves;
+    return;
 }
 
 U64 diag_atks(U64 occ, U64 slider, bool anti) {

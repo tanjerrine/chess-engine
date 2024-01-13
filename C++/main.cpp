@@ -2,8 +2,10 @@
 #include "board.h"
 #include "strategy.h"
 #include <iostream>
+#include <algorithm>
 
 using std::cout; using std::endl; using std::vector;
+using std::sort;
 
 void init_first_rank_atks() {
     for (U64 occ = 0; occ < 128; occ+=2) {
@@ -41,7 +43,8 @@ void test_illegal_moves() {
     // Board b("5rk1/6p1/1b4q1/8/8/4B3/6N1/4R1K1 w - - 0 1");
     Board b("7k/1q4pp/8/8/8/8/6QP/5r1K w - - 0 1");
     b.display();
-    vector<Move> legal_moves = b.get_pseudo_legal_moves();
+    vector<Move> legal_moves;
+    b.get_pseudo_legal_moves(legal_moves);
     print_moves(legal_moves);
 
     enum_color turn = b.get_turn();
@@ -61,11 +64,45 @@ void test_eval_function() {
 }
 
 void print_best_move() {
-    Board b("4b2R/6k1/8/5n2/2K5/8/7P/8 w - - 0 1");
+    Board b("4b1q1/6k1/8/5n2/2N5/2K4P/8/3Q4 b - - 0 1"); // Runs in 4.20 seconds
     b.display();
     Move best = best_move(b);
     cout << "Best move: " << best.get_notation() << endl; 
 }
+
+void print_sorted_moves() {
+    Board b("4b1q1/4P1k1/8/5n1P/2N5/2K5/8/3Q4 b - - 0 1");
+    b.display();
+    vector<Move> legal_moves;
+    b.get_legal_moves(legal_moves);
+    cout << "Before sorting: " << endl;
+    print_moves(legal_moves);
+    sort(legal_moves.begin(), legal_moves.end(), std::greater<Move>());
+    cout << "Sorted legal moves: " << endl;
+    print_moves(legal_moves);
+}
+
+void make_best_move() {
+    // Board b("r1B5/1P3k2/8/8/2K5/8/4p3/5N2 w - - 0 2");
+    // Board b("r7/5k2/5p2/1pP5/3K4/4B3/4N3/8 w - b6 0 2");
+    Board b("4r3/5k2/5p2/1pP5/3K4/4Q3/4N3/8 b - - 0 2");
+    b.display();
+    Move best = best_move(b);
+    b.make_move(best);
+    cout << "after " << best.get_notation() << ":" << endl;
+    b.display();
+
+    Move best2 = best_move(b);
+    b.make_move(best2);
+    cout << "after " << best2.get_notation() << ":" << endl;
+    b.display();
+
+    b.unmake_move(best2);
+    b.unmake_move(best);
+    cout << "restored: " << endl;
+    b.display();
+}
+
 
 int main(int argc, char* argv[]) {
     // pawn captures
@@ -84,10 +121,14 @@ int main(int argc, char* argv[]) {
     // Board b("5rk1/6p1/1b4q1/8/8/4B3/6N1/4R1K1 w - - 0 1");
     // test atks_sq
     // Board b("5rk1/6p1/1b4q1/8/8/7n/8/r3R1K1 w - - 0 1");
+    // make_best_move();
 
-    // b.display();
-    // vector<Move> legal_moves = b.get_pseudo_legal_moves();
+    // vector<Move> legal_moves = b.get_legal_moves();
     // print_moves(legal_moves);
+    // sort(legal_moves.begin(), legal_moves.end(), greater<Move>());
+    // cout << "Sorted legal moves: " << endl;
+    // print_moves(legal_moves);
+    // print_sorted_moves();
     print_best_move();
     
     // test_illegal_moves();

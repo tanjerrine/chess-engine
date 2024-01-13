@@ -12,6 +12,11 @@ enum enum_color {white, black};
 const int W_CHECKMATE_SCORE = 1000;
 const int B_CHECKMATE_SCORE = -1000;
 
+const U8 WK_CASTLE = 0x08;
+const U8 WQ_CASTLE = 0x04;
+const U8 BK_CASTLE = 0x02;
+const U8 BQ_CASTLE = 0x01;
+
 class Board {
     public:
         Board(std::string fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
@@ -21,11 +26,13 @@ class Board {
         U64 get_w_pieces() const {return w_pieces;}
         U64 get_b_pieces() const {return b_pieces;}
         U64 get_en_passant() const {return en_passant;}
+        int piece_ind_at_square(U64 pos, enum_color color);
         char piece_at_square(U64 pos);
         void display();
-        std::vector<Move> get_pseudo_legal_moves();
-        std::vector<Move> get_legal_moves();
+        void get_pseudo_legal_moves(std::vector<Move> &legal_moves);
+        void get_legal_moves(std::vector<Move> &legal_moves);
         void make_move(const Move &move);
+        void unmake_move(const Move &move);
         bool in_check(enum_color color);
         bool is_checkmated();
         bool is_stalemated();
@@ -35,12 +42,13 @@ class Board {
 
     private:
         enum_color turn;
-        std::string can_castle;
+        U8 can_castle;
         U64 en_passant;
         U64 w_pieces;
         U64 b_pieces;
         int half_move_clock;
         int move_number;
+        std::vector<Unmove> move_stk;
 };
 
 #endif

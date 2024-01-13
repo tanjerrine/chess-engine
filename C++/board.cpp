@@ -16,11 +16,19 @@ Board::Board(std::string fen) {
     string board_str;
     char turn_char;
     string en_passant_str;
-    ss >> board_str >> turn_char >> can_castle >> en_passant_str >> half_move_clock >> move_number;
+    string castle_str;
+    ss >> board_str >> turn_char >> castle_str >> en_passant_str >> half_move_clock >> move_number;
     if (turn_char == 'w') turn = white;
     else if (turn_char == 'b') turn = black;
     else {cout << "Invalid turn character from fen!" << endl; exit(EXIT_FAILURE);}
     en_passant = sq_to_pos(en_passant_str);
+    can_castle = 0;
+    for (char cc : castle_str) {
+        if (cc == 'K') {can_castle |= WK_CASTLE;}
+        else if (cc == 'Q') {can_castle |= WQ_CASTLE;}
+        else if (cc == 'k') {can_castle |= BK_CASTLE;}
+        else {can_castle |= BQ_CASTLE;}
+    }
 
     for (int i = 0; i < 6; i++) {
         w_piece_arr[i] = 0;
@@ -52,14 +60,24 @@ Board::Board(std::string fen) {
     }
 }
 
+int Board::piece_ind_at_square(U64 pos, enum_color color) {
+    U64 (&piece_arr)[6] = (color == white ? w_piece_arr : b_piece_arr);
+    for (int i = 0; i < 6; i++) {
+        if (piece_arr[i] & pos) {
+            return i;
+        }
+    } 
+    return -1;
+}
+
 char Board::piece_at_square(U64 pos) {
-    for (int i = 0; i < sizeof(w_piece_arr) / sizeof(w_piece_arr[0]); i++) {
+    for (int i = 0; i < 6; i++) {
         if (w_piece_arr[i] & pos) {
             return toupper(NUM_TO_FEN[i]);
         }
     }
 
-    for (int i = 0; i < sizeof(b_piece_arr) / sizeof(b_piece_arr[0]); i++) {
+    for (int i = 0; i < 6; i++) {
         if (b_piece_arr[i] & pos) {
             return (NUM_TO_FEN[i]);
         }
@@ -81,58 +99,66 @@ void Board::display() {
     cout << "    " << "a b c d e f g h" << endl;
 }
 
-vector<Move> Board::get_pseudo_legal_moves() {
-    vector<Move> legal_moves;
+void Board::get_pseudo_legal_moves(vector<Move> &legal_moves) {
     U64 (&p_arr)[6] = (turn == white ? w_piece_arr : b_piece_arr);
     for (int i = 0; i < 6; i++) {
         U64 piece_bb = p_arr[i];
         if (i == 0) {
-            vector<Move> p_moves = pawns_legal_moves(piece_bb, this);
-            vector_extend(legal_moves, p_moves);
+            pawns_legal_moves(legal_moves, piece_bb, this);
         }
         else if (i == 1 || i == 5) {
-            vector<Move> n_moves = king_knights_legal_moves(piece_bb, this, i);
-            vector_extend(legal_moves, n_moves);
+            king_knights_legal_moves(legal_moves, piece_bb, this, i);
         }
         else {
-            vector<Move> s_moves = sliders_legal_moves(piece_bb, this, i);
-            vector_extend(legal_moves, s_moves);
+            sliders_legal_moves(legal_moves, piece_bb, this, i);
         }
     }
 
-    return legal_moves;
+    return;
 }
 
-vector<Move> Board::get_legal_moves() {
-    vector<Move> psuedo_legal = get_pseudo_legal_moves();
-    vector<Move> legal_moves;
+void Board::get_legal_moves(std::vector<Move> &legal_moves) {
+    vector<Move> psuedo_legal;
+    get_pseudo_legal_moves(psuedo_legal);
+    enum_color moving_color = turn;
     for (Move m : psuedo_legal) {
-        Board board_copy(*this);
-        board_copy.make_move(m); 
-        if (!board_copy.in_check(turn)) {
+        make_move(m); 
+        if (!in_check(moving_color)) {
             legal_moves.push_back(m);
         }
+        unmake_move(m);
     }
-    return legal_moves;
+    return;
 }
 
 void Board::make_move(const Move &move) {
     U64 start = move.get_start();
     U64 finish = move.get_finish();
     U64 moved_piece = move.get_piece();
+    int promote = move.get_promote();
     // update piece_bb
     U64 (&pieces_arr)[6] = (turn == white ? w_piece_arr : b_piece_arr);
     U64 &piece_bb = pieces_arr[moved_piece];
     piece_bb &= ~start;
-    piece_bb |= finish;
+    if (promote > -1) {
+        pieces_arr[promote] |= finish;
+    }
+    else {
+        piece_bb |= finish;
+    }
     // update bb for this color
     U64 &my_color_bb = (turn == white ? w_pieces : b_pieces);
     my_color_bb &= ~start;
     my_color_bb |= finish;
+
+    int old_hmc = half_move_clock;
+    int u_captured = 0;
     // delete piece for capture, reset 50 move rule
     if (move.get_capture()) {
         U64 erase = finish;
         if (move.get_en_passant()) {erase = (turn == white ? finish >> 8 : finish << 8);}
+        u_captured = piece_ind_at_square(erase, (turn == white ? black : white));
+        if (u_captured == -1) {cout << "captured piece not found" << endl; exit(EXIT_FAILURE);}
         U64 (&opp_pieces_arr)[6] = (turn == black ? w_piece_arr : b_piece_arr);
         U64 &opp_color_bb = (turn == black ? w_pieces : b_pieces);
         for (int i = 0; i < 6; i++) {
@@ -145,6 +171,10 @@ void Board::make_move(const Move &move) {
         half_move_clock = 0;
     }
     else half_move_clock++;
+    
+    // push into stack
+    move_stk.push_back(Unmove(u_captured, en_passant, can_castle, old_hmc));
+
     // update en_passant
     if (moved_piece == 0 && (((start >> 16) & finish) | ((start << 16) & finish))) {
         en_passant = (turn == white ? start << 8 : start >> 8);
@@ -162,6 +192,54 @@ void Board::make_move(const Move &move) {
     }
 }
 
+void Board::unmake_move(const Move &move) {
+    U64 start = move.get_start();
+    U64 finish = move.get_finish();
+    U64 moved_piece = move.get_piece();
+    int promote = move.get_promote();
+    // update piece_bb
+    U64 (&pieces_arr)[6] = (turn == black ? w_piece_arr : b_piece_arr);
+    U64 &piece_bb = pieces_arr[moved_piece];
+    piece_bb |= start;
+    if (promote > -1) {
+        pieces_arr[promote] &= ~finish;
+    }
+    else {
+        piece_bb &= ~finish;
+    }
+    // update bb for this color
+    U64 &my_color_bb = (turn == black ? w_pieces : b_pieces);
+    my_color_bb |= start;
+    my_color_bb &= ~finish;
+
+    // pop irreversibles
+    Unmove unmove = move_stk.back();
+    move_stk.pop_back();
+    // spawn piece for capture, reset 50 move rule
+    if (move.get_capture()) {
+        U64 erase = finish;
+        if (move.get_en_passant()) {erase = (turn == black ? finish >> 8 : finish << 8);}
+        U64 (&opp_pieces_arr)[6] = (turn == white ? w_piece_arr : b_piece_arr);
+        U64 &opp_color_bb = (turn == white ? w_pieces : b_pieces);
+        opp_pieces_arr[unmove.get_captured()] |= erase;
+
+        opp_color_bb |= erase;
+    }
+    half_move_clock = unmove.get_hmc();
+    can_castle = unmove.get_can_castle();
+
+    // update en_passant
+    en_passant = unmove.get_en_passant();
+    // update turn, move clocks
+    if (turn == black) {
+        turn = white;
+    }
+    else {
+        turn = black;
+        move_number--;
+    }
+}
+
 bool Board::in_check(enum_color color) {
     U64 (&opp_bb_arr)[6] = (color == white ? b_piece_arr : w_piece_arr);
     U64 sq = (color == white ? w_piece_arr[5] : b_piece_arr[5]);
@@ -174,7 +252,8 @@ bool Board::in_check(enum_color color) {
 // TODO: potential optimization only count legal moves
 bool Board::is_checkmated() {
     if (in_check(turn)) {
-        vector<Move> moves = get_legal_moves();
+        vector<Move> moves;
+        get_legal_moves(moves);
         return (moves.size() == 0);
     }
     return false;
@@ -182,7 +261,8 @@ bool Board::is_checkmated() {
 
 bool Board::is_stalemated() {
     if (!in_check(turn)) {
-        vector<Move> moves = get_legal_moves();
+        vector<Move> moves;
+        get_legal_moves(moves);
         return (moves.size() == 0);
     }
     return false;
@@ -205,7 +285,7 @@ int Board::count_pieces(int piece, enum_color color) {
 
 float Board::get_eval() {
     if (is_checkmated()) return (turn == white ? B_CHECKMATE_SCORE : W_CHECKMATE_SCORE);
-    if (is_stalemated()) return 0;
+    if (is_stalemated() || half_move_clock == 100) return 0;
     float eval = 0;
     for (int i = 0; i < 6; i++) {
         eval += (count_pieces(i, white) - count_pieces(i, black)) * PIECE_VALUES[i];
