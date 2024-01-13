@@ -122,11 +122,12 @@ void Board::get_legal_moves(std::vector<Move> &legal_moves) {
     get_pseudo_legal_moves(psuedo_legal);
     enum_color moving_color = turn;
     for (Move m : psuedo_legal) {
-        make_move(m); 
-        if (!in_check(moving_color)) {
+        Board board_copy(*this);
+        board_copy.make_move(m); 
+        if (!board_copy.in_check(moving_color)) {
             legal_moves.push_back(m);
         }
-        unmake_move(m);
+        // unmake_move(m);
     }
     return;
 }
@@ -151,14 +152,14 @@ void Board::make_move(const Move &move) {
     my_color_bb &= ~start;
     my_color_bb |= finish;
 
-    int old_hmc = half_move_clock;
-    int u_captured = 0;
+    // int old_hmc = half_move_clock;
+    // int u_captured = 0;
     // delete piece for capture, reset 50 move rule
     if (move.get_capture()) {
         U64 erase = finish;
         if (move.get_en_passant()) {erase = (turn == white ? finish >> 8 : finish << 8);}
-        u_captured = piece_ind_at_square(erase, (turn == white ? black : white));
-        if (u_captured == -1) {cout << "captured piece not found" << endl; exit(EXIT_FAILURE);}
+        // u_captured = piece_ind_at_square(erase, (turn == white ? black : white));
+        // if (u_captured == -1) {cout << "captured piece not found" << endl; exit(EXIT_FAILURE);}
         U64 (&opp_pieces_arr)[6] = (turn == black ? w_piece_arr : b_piece_arr);
         U64 &opp_color_bb = (turn == black ? w_pieces : b_pieces);
         for (int i = 0; i < 6; i++) {
@@ -173,7 +174,7 @@ void Board::make_move(const Move &move) {
     else half_move_clock++;
     
     // push into stack
-    move_stk.push_back(Unmove(u_captured, en_passant, can_castle, old_hmc));
+    // move_stk.push_back(Unmove(u_captured, en_passant, can_castle, old_hmc));
 
     // update en_passant
     if (moved_piece == 0 && (((start >> 16) & finish) | ((start << 16) & finish))) {

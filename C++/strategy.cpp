@@ -17,10 +17,11 @@ Move best_move(Board &position) {
     sort(all_moves.begin(), all_moves.end(), greater<Move>());
     Move best_move(0,0,0);
     for (Move move : all_moves) {
-        position.make_move(move);
+        Board board_copy(position);
+        board_copy.make_move(move);
         // if (move.get_piece() != 0 || move.get_finish() != ((U64) 1 << 23)) continue;
-        float eval = -negamax(position, search_depth - 1, -FLT_MAX, FLT_MAX, (turn != white));
-        position.unmake_move(move);
+        float eval = -negamax(board_copy, search_depth - 1, -FLT_MAX, FLT_MAX, (turn != white));
+        // position.unmake_move(move);
         if (eval > max_eval) {
             max_eval = eval;
             best_move = move;
@@ -33,6 +34,37 @@ Move best_move(Board &position) {
     }
     return best_move;
 }
+
+float negamax(Board &position, int depth, float alpha, float beta, bool max_player) {
+    if (depth == 0 || position.game_over()) {
+        // float eval = position.get_eval();
+        // if (eval == 3 || eval == -5) {cout << max_player << "sym eval: " << ((2 * (int)max_player - 1) * position.get_eval()) << ", position: " << endl; position.display();}
+        return (2 * (int)max_player - 1) * position.get_eval();
+    }
+    float max_eval = -FLT_MAX;
+    vector<Move> p_legal_moves;
+    position.get_pseudo_legal_moves(p_legal_moves);
+    enum_color moving_color = position.get_turn();
+    sort(p_legal_moves.begin(), p_legal_moves.end(), greater<Move>());
+    for (Move move : p_legal_moves) {
+        Board board_copy(position);
+        board_copy.make_move(move);
+        if (!board_copy.in_check(moving_color)) {
+            float eval = -negamax(board_copy, depth - 1, -beta, -alpha, !max_player);
+            // position.unmake_move(move);
+            max_eval = max(max_eval, eval);
+            alpha = max(alpha, eval);
+            if (beta <= alpha) {
+                break;
+            }
+        }
+        else {
+            // position.unmake_move(move);
+        }
+    }
+    return max_eval;
+}
+
 
 Move best_move_minimax(Board position) {
     enum_color turn = position.get_turn();
@@ -72,35 +104,6 @@ Move best_move_minimax(Board position) {
         }
         return best_move;
     }
-}
-
-float negamax(Board &position, int depth, float alpha, float beta, bool max_player) {
-    if (depth == 0 || position.game_over()) {
-        // float eval = position.get_eval();
-        // if (eval == 3 || eval == -5) {cout << max_player << "sym eval: " << ((2 * (int)max_player - 1) * position.get_eval()) << ", position: " << endl; position.display();}
-        return (2 * (int)max_player - 1) * position.get_eval();
-    }
-    float max_eval = -FLT_MAX;
-    vector<Move> p_legal_moves;
-    position.get_pseudo_legal_moves(p_legal_moves);
-    enum_color moving_color = position.get_turn();
-    sort(p_legal_moves.begin(), p_legal_moves.end(), greater<Move>());
-    for (Move move : p_legal_moves) {
-        position.make_move(move);
-        if (!position.in_check(moving_color)) {
-            float eval = -negamax(position, depth - 1, -beta, -alpha, !max_player);
-            position.unmake_move(move);
-            max_eval = max(max_eval, eval);
-            alpha = max(alpha, eval);
-            if (beta <= alpha) {
-                break;
-            }
-        }
-        else {
-            position.unmake_move(move);
-        }
-    }
-    return max_eval;
 }
 
 float minimax(Board position, int depth, float alpha, float beta, bool max_player) {
