@@ -8,14 +8,16 @@ typedef unsigned long long U64;
 enum enum_color {white, black};
 
 #include "move.h"
+#include <limits.h>
 
-const int W_CHECKMATE_SCORE = 1000;
-const int B_CHECKMATE_SCORE = -1000;
+const short VALUE_MATED = -SHRT_MAX/2;
 
 const U8 WK_CASTLE = 0x08;
 const U8 WQ_CASTLE = 0x04;
 const U8 BK_CASTLE = 0x02;
 const U8 BQ_CASTLE = 0x01;
+
+extern U64 NUM_EVALED;
 
 class Board {
     public:
@@ -26,6 +28,7 @@ class Board {
         U64 get_w_pieces() const {return w_pieces;}
         U64 get_b_pieces() const {return b_pieces;}
         U64 get_en_passant() const {return en_passant;}
+        short get_eval_adj() const {return eval_sq_adj;}
         int piece_ind_at_square(U64 pos, enum_color color);
         char piece_at_square(U64 pos);
         void display();
@@ -38,7 +41,7 @@ class Board {
         bool is_stalemated();
         bool game_over();
         int count_pieces(int piece, enum_color color);
-        float get_eval(); 
+        short get_eval(); 
 
     private:
         enum_color turn;
@@ -49,6 +52,7 @@ class Board {
         int half_move_clock;
         int move_number;
         std::vector<Unmove> move_stk;
+        short eval_sq_adj;
 };
 
 #endif

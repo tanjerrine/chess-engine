@@ -10,6 +10,8 @@
 using std::string; using std::cout; using std::endl; using std::stringstream;
 using std::map; using std::vector; using std::pair;
 
+U64 NUM_EVALED = 0;
+
 Board::Board(std::string fen) {
     stringstream ss;
     ss << fen;
@@ -35,21 +37,32 @@ Board::Board(std::string fen) {
         b_piece_arr[i] = 0;
     }
 
+    eval_sq_adj = 0;
     U64 pos = (U64) 1 << 56;
+    int sq = 56;
     for (char c : board_str) {
         if ('1' <= c && c <= '9') {
-            pos <<= (c - '0');
+            int diff = (c - '0');
+            pos <<= diff;
+            sq += diff;
         }
         else if ('A' <= c && c <= 'Z') {
-            w_piece_arr[PIECE_TO_NUM.at(FEN_TO_PIECE.at(tolower(c)))] |= pos;
+            int piece = PIECE_TO_NUM.at(FEN_TO_PIECE.at(tolower(c)));
+            w_piece_arr[piece] |= pos;
+            eval_sq_adj += get_sq_adj(piece, sq, false);
             pos <<= 1;
+            sq += 1;
         }
         else if ('a' <= c && c <= 'z') {
-            b_piece_arr[PIECE_TO_NUM.at(FEN_TO_PIECE.at(c))] |= pos;
+            int piece = PIECE_TO_NUM.at(FEN_TO_PIECE.at(c));
+            b_piece_arr[piece] |= pos;
+            eval_sq_adj -= get_sq_adj(piece, sq, true);
             pos <<= 1;
+            sq += 1;
         }
         else if (c == '/') {
             pos = (pos ? pos >> 16 : (U64) 1 << 48);
+            sq -= 16;
         }
     }
     w_pieces = 0;
@@ -122,12 +135,11 @@ void Board::get_legal_moves(std::vector<Move> &legal_moves) {
     get_pseudo_legal_moves(psuedo_legal);
     enum_color moving_color = turn;
     for (Move m : psuedo_legal) {
-        Board board_copy(*this);
-        board_copy.make_move(m); 
-        if (!board_copy.in_check(moving_color)) {
+        make_move(m); 
+        if (!in_check(moving_color)) {
             legal_moves.push_back(m);
         }
-        // unmake_move(m);
+        unmake_move(m);
     }
     return;
 }
@@ -152,14 +164,21 @@ void Board::make_move(const Move &move) {
     my_color_bb &= ~start;
     my_color_bb |= finish;
 
-    // int old_hmc = half_move_clock;
-    // int u_captured = 0;
+    // update eval_sq_adj
+    short delta_eval = 0;
+
+    delta_eval = get_sq_adj((promote > -1 ? promote : moved_piece), bit_scan(finish), turn == black) - get_sq_adj(moved_piece, bit_scan(start), turn == black);
+    
+    int old_hmc = half_move_clock;
+    int u_captured = 0;
     // delete piece for capture, reset 50 move rule
     if (move.get_capture()) {
         U64 erase = finish;
         if (move.get_en_passant()) {erase = (turn == white ? finish >> 8 : finish << 8);}
-        // u_captured = piece_ind_at_square(erase, (turn == white ? black : white));
-        // if (u_captured == -1) {cout << "captured piece not found" << endl; exit(EXIT_FAILURE);}
+        u_captured = piece_ind_at_square(erase, (turn == white ? black : white));
+        if (u_captured == -1) {cout << "captured piece not found" << endl; exit(EXIT_FAILURE);}
+        delta_eval += get_sq_adj(u_captured, bit_scan(erase), turn == black);
+
         U64 (&opp_pieces_arr)[6] = (turn == black ? w_piece_arr : b_piece_arr);
         U64 &opp_color_bb = (turn == black ? w_pieces : b_pieces);
         for (int i = 0; i < 6; i++) {
@@ -172,9 +191,16 @@ void Board::make_move(const Move &move) {
         half_move_clock = 0;
     }
     else half_move_clock++;
-    
+
+    if (turn == white) {
+        eval_sq_adj += delta_eval;
+    }
+    else {
+        eval_sq_adj -= delta_eval;
+    }
+
     // push into stack
-    // move_stk.push_back(Unmove(u_captured, en_passant, can_castle, old_hmc));
+    move_stk.push_back(Unmove(u_captured, en_passant, can_castle, old_hmc));
 
     // update en_passant
     if (moved_piece == 0 && (((start >> 16) & finish) | ((start << 16) & finish))) {
@@ -213,6 +239,11 @@ void Board::unmake_move(const Move &move) {
     my_color_bb |= start;
     my_color_bb &= ~finish;
 
+    // update eval_sq_adj
+    short delta_eval = 0;
+
+    delta_eval = get_sq_adj((promote > -1 ? promote : moved_piece), bit_scan(finish), turn == white) - get_sq_adj(moved_piece, bit_scan(start), turn == white);
+
     // pop irreversibles
     Unmove unmove = move_stk.back();
     move_stk.pop_back();
@@ -220,14 +251,23 @@ void Board::unmake_move(const Move &move) {
     if (move.get_capture()) {
         U64 erase = finish;
         if (move.get_en_passant()) {erase = (turn == black ? finish >> 8 : finish << 8);}
+        
         U64 (&opp_pieces_arr)[6] = (turn == white ? w_piece_arr : b_piece_arr);
         U64 &opp_color_bb = (turn == white ? w_pieces : b_pieces);
-        opp_pieces_arr[unmove.get_captured()] |= erase;
+        int captured = unmove.get_captured();
+        opp_pieces_arr[captured] |= erase;
+        delta_eval += get_sq_adj(captured, bit_scan(erase), turn == white);
 
         opp_color_bb |= erase;
     }
     half_move_clock = unmove.get_hmc();
     can_castle = unmove.get_can_castle();
+    if (turn == white) {
+        eval_sq_adj += delta_eval;
+    }
+    else {
+        eval_sq_adj -= delta_eval;
+    }
 
     // update en_passant
     en_passant = unmove.get_en_passant();
@@ -270,7 +310,7 @@ bool Board::is_stalemated() {
 }
 
 bool Board::game_over() {
-    return is_checkmated() || is_stalemated();
+    return is_checkmated() || is_stalemated() || half_move_clock >= 100;
 }
 
 int Board::count_pieces(int piece, enum_color color) {
@@ -284,12 +324,13 @@ int Board::count_pieces(int piece, enum_color color) {
     return count;
 }
 
-float Board::get_eval() {
-    if (is_checkmated()) return (turn == white ? B_CHECKMATE_SCORE : W_CHECKMATE_SCORE);
+short Board::get_eval() {
+    NUM_EVALED++;
+    if (is_checkmated()) return (turn == white ? VALUE_MATED : -VALUE_MATED);
     if (is_stalemated() || half_move_clock == 100) return 0;
-    float eval = 0;
+    short eval = 0;
     for (int i = 0; i < 6; i++) {
         eval += (count_pieces(i, white) - count_pieces(i, black)) * PIECE_VALUES[i];
     }
-    return eval;
+    return eval + eval_sq_adj;
 }

@@ -4,6 +4,8 @@
 
 using std::stringstream; using std::cout; using std::endl;
 
+const short *SQ_TBS[6] = {PAWN_SQ_TB, KNIGHT_SQ_TB, BISHOP_SQ_TB, ROOK_SQ_TB, QUEEN_SQ_TB, KING_SQ_TB};
+
 char int_to_alg_not(int piece) {
     char fen = NUM_TO_FEN[piece];
     return (fen == 'p' ? '\0' : toupper(fen));

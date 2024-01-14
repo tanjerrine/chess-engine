@@ -64,10 +64,12 @@ void test_eval_function() {
 }
 
 void print_best_move() {
-    Board b("4b1q1/6k1/8/5n2/2N5/2K4P/8/3Q4 b - - 0 1"); // Runs in 4.20 seconds
+    NUM_EVALED = 0;
+    Board b("4b1q1/6k1/8/5n2/2N5/2K4P/8/3Q4 b - - 0 1"); // Runs in 4.20 seconds, Evaluated 116658 positions
     b.display();
     Move best = best_move(b);
     cout << "Best move: " << best.get_notation() << endl; 
+    cout << "Evaluated " << NUM_EVALED << " positions" << endl;
 }
 
 void print_sorted_moves() {
@@ -82,20 +84,21 @@ void print_sorted_moves() {
     print_moves(legal_moves);
 }
 
-void make_best_move() {
-    // Board b("r1B5/1P3k2/8/8/2K5/8/4p3/5N2 w - - 0 2");
-    // Board b("r7/5k2/5p2/1pP5/3K4/4B3/4N3/8 w - b6 0 2");
-    Board b("4r3/5k2/5p2/1pP5/3K4/4Q3/4N3/8 b - - 0 2");
-    b.display();
+Move make_best_move(Board &b) {
     Move best = best_move(b);
     b.make_move(best);
     cout << "after " << best.get_notation() << ":" << endl;
     b.display();
+    return best;
+}
 
-    Move best2 = best_move(b);
-    b.make_move(best2);
-    cout << "after " << best2.get_notation() << ":" << endl;
+void make_two_moves(Board &b) {
+    // Board b("r1B5/1P3k2/8/8/2K5/8/4p3/5N2 w - - 0 2");
+    // Board b("r7/5k2/5p2/1pP5/3K4/4B3/4N3/8 w - b6 0 2");
     b.display();
+    Move best = make_best_move(b);
+
+    Move best2 = make_best_move(b);
 
     b.unmake_move(best2);
     b.unmake_move(best);
@@ -103,6 +106,11 @@ void make_best_move() {
     b.display();
 }
 
+void print_eval_sq_adj(Board &b) {
+    b.display();
+    short eval = b.get_eval_adj();
+    cout << "Eval adjustment: " << eval << endl;
+}
 
 int main(int argc, char* argv[]) {
     // pawn captures
@@ -129,7 +137,13 @@ int main(int argc, char* argv[]) {
     // cout << "Sorted legal moves: " << endl;
     // print_moves(legal_moves);
     // print_sorted_moves();
-    print_best_move();
+    // print_best_move();
+    // Board b("5k2/8/8/8/8/8/7P/5K2 w - - 0 1");
+    // print_eval_sq_adj(b);
+    // Move m = make_best_move(b);
+    // print_eval_sq_adj(b);
+    Board b;
+    make_two_moves(b);
     
     // test_illegal_moves();
     // Move test_move = Move(0, (U64) 1 << 34, (U64) 1 << 41, true, true);
