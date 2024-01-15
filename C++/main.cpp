@@ -5,7 +5,7 @@
 #include <algorithm>
 
 using std::cout; using std::endl; using std::vector;
-using std::sort;
+using std::sort; using std::string;
 
 void init_first_rank_atks() {
     for (U64 occ = 0; occ < 128; occ+=2) {
@@ -72,8 +72,7 @@ void print_best_move() {
     cout << "Evaluated " << NUM_EVALED << " positions" << endl;
 }
 
-void print_sorted_moves() {
-    Board b("4b1q1/4P1k1/8/5n1P/2N5/2K5/8/3Q4 b - - 0 1");
+void print_sorted_moves(Board &b) {
     b.display();
     vector<Move> legal_moves;
     b.get_legal_moves(legal_moves);
@@ -112,7 +111,18 @@ void print_eval_sq_adj(Board &b) {
     cout << "Eval adjustment: " << eval << endl;
 }
 
+void play_itself() {
+    Board b;
+    vector<Move> all_moves;
+    while (!b.game_over()) {
+        Move best = make_best_move(b);
+        all_moves.push_back(best);
+    }
+    print_moves(all_moves);
+}
+
 int main(int argc, char* argv[]) {
+    NUM_EVALED = 0;
     // pawn captures
     // Board b("rn1qkbnr/pp2pppp/8/2pp1b2/3PP3/5N2/PPP2PPP/RNBQKB1R b KQkq - 2 4");
     // en passant
@@ -142,8 +152,30 @@ int main(int argc, char* argv[]) {
     // print_eval_sq_adj(b);
     // Move m = make_best_move(b);
     // print_eval_sq_adj(b);
-    Board b;
-    make_two_moves(b);
+
+    // white queenside castle
+    // Board b("rnb1kbnr/pppppppp/6q1/8/8/8/PP1PPP1P/R3K2R w KQkq - 0 1");
+    // print_eval_sq_adj(b);
+    // Move m(5, (U64) 1 << 4, (U64) 1 << 2);
+    // b.make_move(m);
+    // print_eval_sq_adj(b);
+    // b.unmake_move(m);
+    // print_eval_sq_adj(b);
+
+    //black kingside castle
+    // Board b("rnb1k2r/pppppppp/6q1/8/8/8/PP1PPP1P/R3K2R b KQkq - 0 1");
+    // print_eval_sq_adj(b);
+    // Move m(5, (U64) 1 << 60, (U64) 1 << 62);
+    // b.make_move(m);
+    // print_eval_sq_adj(b);
+    // b.unmake_move(m);
+    // print_eval_sq_adj(b);
+
+    // Board b("rnbqk2r/pppppppp/8/8/8/8/PP1PPP1P/R3K2R b KQkq - 0 1");
+    // make_two_moves(b);
+    // print_sorted_moves(b);
+
+    play_itself();
     
     // test_illegal_moves();
     // Move test_move = Move(0, (U64) 1 << 34, (U64) 1 << 41, true, true);

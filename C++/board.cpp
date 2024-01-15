@@ -168,7 +168,7 @@ void Board::make_move(const Move &move) {
     short delta_eval = 0;
 
     delta_eval = get_sq_adj((promote > -1 ? promote : moved_piece), bit_scan(finish), turn == black) - get_sq_adj(moved_piece, bit_scan(start), turn == black);
-    
+
     int old_hmc = half_move_clock;
     int u_captured = 0;
     // delete piece for capture, reset 50 move rule
@@ -192,15 +192,45 @@ void Board::make_move(const Move &move) {
     }
     else half_move_clock++;
 
+    // push into stack
+    move_stk.push_back(Unmove(u_captured, en_passant, can_castle, old_hmc));
+    // castle
+    U8 k_castle = (turn == white ? WK_CASTLE : BK_CASTLE);
+    U8 q_castle = (turn == white ? WQ_CASTLE : BQ_CASTLE);
+    if (moved_piece == 5) {
+        can_castle &= ~(k_castle | q_castle);
+        if (start << 2 == finish) {
+            U64 &rook_bb = pieces_arr[3];
+            U64 r_start = finish << 1;
+            U64 r_finish = finish >> 1;
+            rook_bb &= ~r_start;
+            rook_bb |= r_finish;
+            my_color_bb &= ~r_start;
+            my_color_bb |= r_finish;
+            delta_eval += KINGSIDE_ROOK_ADJ;
+        }
+        else if (start >> 2 == finish) {
+            U64 &rook_bb = pieces_arr[3];
+            U64 r_start = finish >> 2;
+            U64 r_finish = finish << 1;
+            rook_bb &= ~r_start;
+            rook_bb |= r_finish;
+            my_color_bb &= ~r_start;
+            my_color_bb |= r_finish;
+            delta_eval += QUEENSIDE_ROOK_ADJ;
+        }
+    }
+    U64 k_castle_sq = (turn == white ? WK_CASTLE_SQ : BK_CASTLE_SQ);
+    U64 q_castle_sq = (turn == white ? WQ_CASTLE_SQ : BQ_CASTLE_SQ);
+    if ((can_castle & k_castle) && ((moved_piece == 3 && start == k_castle_sq) || finish == k_castle_sq)) {can_castle &= ~k_castle;}
+    else if ((can_castle & q_castle) && ((moved_piece == 3 && start == q_castle_sq) || finish == q_castle_sq)) {can_castle &= ~q_castle;}
+    // adjust eval
     if (turn == white) {
         eval_sq_adj += delta_eval;
     }
     else {
         eval_sq_adj -= delta_eval;
     }
-
-    // push into stack
-    move_stk.push_back(Unmove(u_captured, en_passant, can_castle, old_hmc));
 
     // update en_passant
     if (moved_piece == 0 && (((start >> 16) & finish) | ((start << 16) & finish))) {
@@ -243,6 +273,29 @@ void Board::unmake_move(const Move &move) {
     short delta_eval = 0;
 
     delta_eval = get_sq_adj((promote > -1 ? promote : moved_piece), bit_scan(finish), turn == white) - get_sq_adj(moved_piece, bit_scan(start), turn == white);
+
+    if (moved_piece == 5) {
+        if (start << 2 == finish) {
+            U64 &rook_bb = pieces_arr[3];
+            U64 r_start = finish << 1;
+            U64 r_finish = finish >> 1;
+            rook_bb |= r_start;
+            rook_bb &= ~r_finish;
+            my_color_bb |= r_start;
+            my_color_bb &= ~r_finish;
+            delta_eval += KINGSIDE_ROOK_ADJ;
+        }
+        else if (start >> 2 == finish) {
+            U64 &rook_bb = pieces_arr[3];
+            U64 r_start = finish >> 2;
+            U64 r_finish = finish << 1;
+            rook_bb |= r_start;
+            rook_bb &= ~r_finish;
+            my_color_bb |= r_start;
+            my_color_bb &= ~r_finish;
+            delta_eval += QUEENSIDE_ROOK_ADJ;
+        }
+    }
 
     // pop irreversibles
     Unmove unmove = move_stk.back();

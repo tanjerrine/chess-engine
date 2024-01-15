@@ -15,6 +15,10 @@ string Move::get_notation() const {
     string notation;
     if (!capture) {
         notation = int_to_alg_not(piece) + f_pos;
+        if (piece == 5) {
+            if (start << 2 == finish) return "O-O";
+            if (start >> 2 == finish) return "O-O-O";
+        }
     }
     else {
         notation = (piece ? int_to_alg_not(piece) : pos_to_sq(start)[0]) + ('x' + f_pos);
@@ -95,6 +99,29 @@ void king_knights_legal_moves(std::vector<Move> &moves, U64 piece_bb, Board* boa
     enum_color color = board->get_turn();
     U64 opp_pieces = (color == white ? board->get_b_pieces() : board->get_w_pieces());
     U64 same_pieces = (color == black ? board->get_b_pieces() : board->get_w_pieces());
+
+    if (piece == 5) {
+        int castle = board->get_castle_rights();
+        U64 occ_bb = opp_pieces | same_pieces;
+        U64 (&opp_piece_arr)[6] = (color == white ? board->b_piece_arr : board->w_piece_arr);
+        U8 k_castle =(color == white ? WK_CASTLE : BK_CASTLE);
+        U8 q_castle = (color == white ? WQ_CASTLE : BQ_CASTLE);
+        if ((castle & k_castle) && !(occ_bb & ((piece_bb << 1) | (piece_bb << 2)))) {
+            if (!attacks_to_sq(opp_piece_arr, occ_bb, piece_bb, color) && 
+                !attacks_to_sq(opp_piece_arr, occ_bb, piece_bb << 1, color) &&
+                !attacks_to_sq(opp_piece_arr, occ_bb, piece_bb << 2, color)) {
+                    moves.push_back(Move(5, piece_bb, piece_bb << 2));
+                }
+        }
+        if ((castle & q_castle) && !(occ_bb & ((piece_bb >> 1) | (piece_bb >> 2) | (piece_bb >> 3)))) {
+            if (!attacks_to_sq(opp_piece_arr, occ_bb, piece_bb, color) && 
+                !attacks_to_sq(opp_piece_arr, occ_bb, piece_bb >> 1, color) &&
+                !attacks_to_sq(opp_piece_arr, occ_bb, piece_bb >> 2, color)) {
+                    moves.push_back(Move(5, piece_bb, piece_bb >> 2));
+                }
+        }
+    }
+
     const U64 (&move_lookup)[64] = (piece == 1 ? knight_attacks : king_attacks);
     while (piece_bb) {
         U64 start_pos = piece_bb & -piece_bb;

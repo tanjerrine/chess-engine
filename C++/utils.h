@@ -73,6 +73,13 @@ const short ROOK_SQ_TB[64] = {
      0,  0,  0,  0,  0,  0,  0,  0
 };
 
+const short KINGSIDE_ROOK_ADJ = ROOK_SQ_TB[5] - ROOK_SQ_TB[7];
+const short QUEENSIDE_ROOK_ADJ = ROOK_SQ_TB[3] - ROOK_SQ_TB[0];
+const U64 WK_CASTLE_SQ = (U64) 1 << 7;
+const U64 WQ_CASTLE_SQ = (U64) 1;
+const U64 BK_CASTLE_SQ = (U64) 1 << 63;
+const U64 BQ_CASTLE_SQ = (U64) 1 << 56;
+
 const short QUEEN_SQ_TB[64] = {
     -20,-10,-10, -5, -5,-10,-10,-20,
     -10,  0,  5,  0,  0,  0,  0,-10,
