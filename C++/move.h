@@ -106,12 +106,22 @@ U64 get_bishop_atks(U64 occ, U64 slider);
 inline U64 get_queen_atks(U64 occ, U64 slider) {return get_rook_atks(occ, slider) | get_bishop_atks(occ, slider);}
 U64 attacks_to_sq(U64 (&piece_bb)[6], U64 occ_bb, U64 sq, enum_color king_color);
 
-inline void print_moves(std::vector<Move> moves) {
+inline void print_moves_list(std::vector<Move> moves) {
     int num = moves.size();
     std::cout << "Printing all " << num << " moves: ";
     for (int i = 0; i < num; i++) {
         std::cout << moves[i].get_notation();
         if (i != num - 1) std::cout << ", ";
+    }
+    std::cout << std::endl;
+}
+
+inline void print_moves_game(std::vector<Move> moves) {
+    int num = moves.size();
+    for (int i = 0; i < num; i++) {
+        if (i % 2 == 0) std::cout << (i/2)+1 << ". ";
+        std::cout << moves[i].get_notation();
+        if (i != num - 1) std::cout << " ";
     }
     std::cout << std::endl;
 }

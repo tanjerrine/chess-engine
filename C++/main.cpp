@@ -45,7 +45,7 @@ void test_illegal_moves() {
     b.display();
     vector<Move> legal_moves;
     b.get_pseudo_legal_moves(legal_moves);
-    print_moves(legal_moves);
+    print_moves_list(legal_moves);
 
     enum_color turn = b.get_turn();
     for (Move m : legal_moves) {
@@ -77,10 +77,10 @@ void print_sorted_moves(Board &b) {
     vector<Move> legal_moves;
     b.get_legal_moves(legal_moves);
     cout << "Before sorting: " << endl;
-    print_moves(legal_moves);
+    print_moves_list(legal_moves);
     sort(legal_moves.begin(), legal_moves.end(), std::greater<Move>());
     cout << "Sorted legal moves: " << endl;
-    print_moves(legal_moves);
+    print_moves_list(legal_moves);
 }
 
 Move make_best_move(Board &b) {
@@ -114,11 +114,23 @@ void print_eval_sq_adj(Board &b) {
 void play_itself() {
     Board b;
     vector<Move> all_moves;
-    while (!b.game_over()) {
+    while (!b.game_over() && b.get_move_number() <= 75) {
         Move best = make_best_move(b);
+        short eval = b.get_eval_adj();
+        cout << "Eval adjustment: " << eval << endl;
         all_moves.push_back(best);
     }
-    print_moves(all_moves);
+    print_moves_game(all_moves);
+    // 1. e4 e5 2. Nc3 Nf6 3. Qf3 Bb4 4. a3 Bxc3 5. dxc3 Nc6 6. Bg5 d5 7. exd5 Qxd5 8. Qxd5 Nxd5 9. Bc4 Be6 10. Bb5 h6 11. c4 hxg5 12. cxd5 Bxd5 13. c4 Bxg2 14. Ne2 O-O-O 15. Rg1 Rxh2 16. Rd1 Kb8 17. c5 Re8 18. Nc3 a6 19. Ba4 Bf3 20. Rd7 Rg8 21. Rxf7 g4 22. Kf1 Nd4 23. Bd7 Nb3 24. Bxg4 Bxg4 25. Rxg4 Nxc5 26. Rgxg7 Rxf2+ 27. Kxf2 Rxg7 28. Rxg7 Nd3+ 29. Kg1 Nxb2 30. Nd5
+}
+
+void verify_adj_unmove(Board &b) {
+    short before = b.get_eval_adj();
+    Move m = make_best_move(b);
+    b.unmake_move(m);
+    short after = b.get_eval_adj();
+    if (before != after) {cout << "ERROR: Before adj: " << before << ", but after: " << after << endl;}
+    else {cout << "GOOD!" << endl;}
 }
 
 int main(int argc, char* argv[]) {
@@ -142,10 +154,10 @@ int main(int argc, char* argv[]) {
     // make_best_move();
 
     // vector<Move> legal_moves = b.get_legal_moves();
-    // print_moves(legal_moves);
+    // print_moves_list(legal_moves);
     // sort(legal_moves.begin(), legal_moves.end(), greater<Move>());
     // cout << "Sorted legal moves: " << endl;
-    // print_moves(legal_moves);
+    // print_moves_list(legal_moves);
     // print_sorted_moves();
     // print_best_move();
     // Board b("5k2/8/8/8/8/8/7P/5K2 w - - 0 1");
@@ -175,7 +187,44 @@ int main(int argc, char* argv[]) {
     // make_two_moves(b);
     // print_sorted_moves(b);
 
-    play_itself();
+    // play_itself();
+    Board b("r1bqkb1r/pppp1ppp/2n2n2/4P3/5B2/2N5/PPP2PPP/R2QKBNR b KQkq - 0 6"); // Problematic position
+    cout << "adj: " << b.get_eval_adj() << endl;
+    Move m1 = make_best_move(b);
+    Move m2 = make_best_move(b);
+    
+    b.unmake_move(m2);
+    b.unmake_move(m1);
+    b.display();
+    cout << "adj2: " << b.get_eval_adj() << endl;
+
+    // Board b2("r1bqkb1r/pppp1ppp/5n2/4n3/5B2/2N5/PPP2PPP/R2QKBNR w KQkq - 0 7");
+
+    // verify_adj_unmove(b2);
+
+    // Board b2("r1b1kb1r/pppp1ppp/5n2/4q3/8/2N5/PPP1QPPP/R3KBNR w KQkq - 0 9");
+    // cout << "bad future eval: " << b2.get_eval() << endl;
+    // make_best_move(b2);
+    // cout << "one more future eval: " << b2.get_eval() << endl;
+
+    // Board b("1k4r1/1pp2RR1/p7/2n1p3/8/P1N5/1P3P1r/5K2 b - - 0 26");
+    // Board b("r1bqk2r/ppp2ppp/2n2n2/3Pp1B1/8/P1P2Q2/1PP2PPP/R3KBNR b KQkq - 0 7"); should be -50, says -40
+    // Board b("rnbqk2r/pppp1ppp/5n2/4p3/1b2P3/2N2Q2/PPPP1PPP/R1B1KBNR w KQkq - 4 4"); matches -5
+    // Board b("rnbqk2r/pppp1ppp/5n2/4p3/4P3/P1b2Q2/1PPP1PPP/R1B1KBNR w KQkq - 0 5");
+    // short eval = b.get_eval_adj();
+    // cout << "Eval adjustment: " << eval << endl;
+    // Move best = make_best_move(b);
+    // // b.make_move(Move(0, (U64) 1 << 11, (U64) 1 << 18, true));
+    // // b.display();
+    // cout << "after move Eval adjustment: " << b.get_eval_adj() << endl;
+    // b.unmake_move(best);
+    // cout << "restored Eval adjustment: " << b.get_eval_adj() << endl;
+
+    // Board b2("rnbqk2r/pppp1ppp/5n2/4p3/4P3/P1P2Q2/1PP2PPP/R1B1KBNR b KQkq - 0 5");
+    // cout << "static Eval adjustment: " << b2.get_eval_adj() << endl;
+
+    // make_best_move(b);
+    // a3 -5, Bxc3 -15, dxc3 5, 
     
     // test_illegal_moves();
     // Move test_move = Move(0, (U64) 1 << 34, (U64) 1 << 41, true, true);

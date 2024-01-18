@@ -177,7 +177,7 @@ void Board::make_move(const Move &move) {
         if (move.get_en_passant()) {erase = (turn == white ? finish >> 8 : finish << 8);}
         u_captured = piece_ind_at_square(erase, (turn == white ? black : white));
         if (u_captured == -1) {cout << "captured piece not found" << endl; exit(EXIT_FAILURE);}
-        delta_eval += get_sq_adj(u_captured, bit_scan(erase), turn == black);
+        delta_eval += get_sq_adj(u_captured, bit_scan(erase), turn != black); // opposite color piece is captured
 
         U64 (&opp_pieces_arr)[6] = (turn == black ? w_piece_arr : b_piece_arr);
         U64 &opp_color_bb = (turn == black ? w_pieces : b_pieces);
@@ -309,7 +309,7 @@ void Board::unmake_move(const Move &move) {
         U64 &opp_color_bb = (turn == white ? w_pieces : b_pieces);
         int captured = unmove.get_captured();
         opp_pieces_arr[captured] |= erase;
-        delta_eval += get_sq_adj(captured, bit_scan(erase), turn == white);
+        delta_eval += get_sq_adj(captured, bit_scan(erase), turn == black); // captured piece is the opposite turn
 
         opp_color_bb |= erase;
     }

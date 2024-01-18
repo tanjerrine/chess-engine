@@ -30,6 +30,7 @@ class Board {
         U64 get_en_passant() const {return en_passant;}
         short get_eval_adj() const {return eval_sq_adj;}
         U8 get_castle_rights() const {return can_castle;}
+        int get_move_number() const {return move_number;}
         int piece_ind_at_square(U64 pos, enum_color color);
         char piece_at_square(U64 pos);
         void display();
