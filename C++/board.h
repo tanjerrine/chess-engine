@@ -31,6 +31,7 @@ class Board {
         short get_eval_adj() const {return eval_sq_adj;}
         U8 get_castle_rights() const {return can_castle;}
         int get_move_number() const {return move_number;}
+        Unmove get_last_move() const {return (move_stk.empty() ? Unmove(-1, 0, 0, 0) : move_stk.back());}
         int piece_ind_at_square(U64 pos, enum_color color);
         char piece_at_square(U64 pos);
         void display();

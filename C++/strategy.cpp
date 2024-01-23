@@ -3,11 +3,20 @@
 #include "move.h"
 #include <limits.h>
 #include <algorithm>
+#include <fstream>
 
 using std::vector; 
 using std::max; using std::min;
 using std::cout; using std::endl;
 using std::sort; using std::greater;
+using std::ofstream;
+
+void print_move_to_file(string text, Move& m) {
+    ofstream out_f;
+    out_f.open("search_tree.txt", std::ios::out | std::ios::app);
+    out_f << text << m.get_notation() << endl;
+    out_f.close();
+}
 
 Move best_move(Board &position) {
     enum_color turn = position.get_turn();
@@ -18,8 +27,9 @@ Move best_move(Board &position) {
     Move best_move(0,0,0);
     for (Move move : all_moves) {
         position.make_move(move);
+        print_move_to_file("parent move: ", move);
         // if (move.get_piece() != 0 || move.get_finish() != ((U64) 1 << 23)) continue;
-        short eval = -negamax(position, search_depth - 1, -SHRT_MAX, -max_eval, (turn != white));
+        short eval = -negamax(position, search_depth - 1, -SHRT_MAX, -max_eval, (turn != white), (move.get_capture() ? move.get_finish() : 0));
         position.unmake_move(move);
         if (eval > max_eval) {
             max_eval = eval;
@@ -34,11 +44,36 @@ Move best_move(Board &position) {
     return best_move;
 }
 
-short negamax(Board &position, int depth, short alpha, short beta, bool max_player) {
+short negamax(Board &position, int depth, short alpha, short beta, bool max_player, U64 last_cap) {
     if (depth == 0 || position.game_over()) {
         // float eval = position.get_eval();
         // if (eval == 3 || eval == -5) {cout << max_player << "sym eval: " << ((2 * (int)max_player - 1) * position.get_eval()) << ", position: " << endl; position.display();}
-        return (2 * (int)max_player - 1) * position.get_eval();
+        short max_eval = -SHRT_MAX;
+        if (last_cap) {
+            vector<Move> p_legal_moves;
+            position.get_pseudo_legal_moves(p_legal_moves);
+            enum_color moving_color = position.get_turn();
+            for (Move move : p_legal_moves) {
+                if (move.get_finish() == last_cap) {
+                    position.make_move(move);
+                    if (!position.in_check(moving_color)) {
+                        print_move_to_file("extending: ", move);
+                        short eval = -negamax(position, 0, -beta, -alpha, !max_player, (move.get_capture() ? move.get_finish() : 0));
+                        position.unmake_move(move);
+                        max_eval = max(max_eval, eval);
+                        alpha = max(alpha, eval);
+                        if (beta <= alpha) {
+                            break;
+                        }
+                    }
+                    else {
+                        position.unmake_move(move);
+                    }
+                }
+            }
+        }
+        if (max_eval == -SHRT_MAX) {max_eval = (2 * (int)max_player - 1) * position.get_eval();}
+        return max_eval;
     }
     short max_eval = -SHRT_MAX;
     vector<Move> p_legal_moves;
@@ -48,7 +83,8 @@ short negamax(Board &position, int depth, short alpha, short beta, bool max_play
     for (Move move : p_legal_moves) {
         position.make_move(move);
         if (!position.in_check(moving_color)) {
-            short eval = -negamax(position, depth - 1, -beta, -alpha, !max_player);
+            print_move_to_file("checking: ", move);
+            short eval = -negamax(position, depth - 1, -beta, -alpha, !max_player, (move.get_capture() ? move.get_finish() : 0));
             position.unmake_move(move);
             max_eval = max(max_eval, eval);
             alpha = max(alpha, eval);

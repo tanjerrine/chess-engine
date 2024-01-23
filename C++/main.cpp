@@ -189,14 +189,16 @@ int main(int argc, char* argv[]) {
 
     // play_itself();
     Board b("r1bqkb1r/pppp1ppp/2n2n2/4P3/5B2/2N5/PPP2PPP/R2QKBNR b KQkq - 0 6"); // Problematic position
-    cout << "adj: " << b.get_eval_adj() << endl;
-    Move m1 = make_best_move(b);
-    Move m2 = make_best_move(b);
+    make_best_move(b);
+    cout << "Evaled: " << NUM_EVALED << endl;
+    // cout << "adj: " << b.get_eval_adj() << endl;
+    // Move m1 = make_best_move(b);
+    // Move m2 = make_best_move(b);
     
-    b.unmake_move(m2);
-    b.unmake_move(m1);
-    b.display();
-    cout << "adj2: " << b.get_eval_adj() << endl;
+    // b.unmake_move(m2);
+    // b.unmake_move(m1);
+    // b.display();
+    // cout << "adj2: " << b.get_eval_adj() << endl;
 
     // Board b2("r1bqkb1r/pppp1ppp/5n2/4n3/5B2/2N5/PPP2PPP/R2QKBNR w KQkq - 0 7");
 

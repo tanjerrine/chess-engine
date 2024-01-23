@@ -6,6 +6,6 @@ const int search_depth = 5;
 
 Move best_move(Board &position);
 Move best_move_minimax(Board position);
-short negamax(Board &position, int depth, short alpha, short beta, bool max_player);
+short negamax(Board &position, int depth, short alpha, short beta, bool max_player, U64 last_cap);
 short minimax(Board position, int depth, short alpha, short beta, bool max_player);
 #endif

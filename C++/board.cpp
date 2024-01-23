@@ -170,7 +170,7 @@ void Board::make_move(const Move &move) {
     delta_eval = get_sq_adj((promote > -1 ? promote : moved_piece), bit_scan(finish), turn == black) - get_sq_adj(moved_piece, bit_scan(start), turn == black);
 
     int old_hmc = half_move_clock;
-    int u_captured = 0;
+    int u_captured = -1;
     // delete piece for capture, reset 50 move rule
     if (move.get_capture()) {
         U64 erase = finish;
